@@ -31,11 +31,13 @@ void mouseClick(int button, int state, int x, int y);
 
 bool isStarted = false;
 bool isOver = false;
+bool isPaused = false;
 bool startButtonDown = false;
 bool OKButtonDown = false;
 bool isSpaceDown = false;
 GLfloat deltaTime = 0.0;
 GLfloat lastFrame = 0.0;
+GLfloat pausedTime = 0.0;
 
 constexpr std::size_t tubeNum = 999;
 
@@ -148,18 +150,22 @@ void display() {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GLfloat currFrame = 0.0001f * glutGet(GLUT_ELAPSED_TIME);
+	GLfloat currFrame = 0.0001f * glutGet(GLUT_ELAPSED_TIME) - pausedTime;
 	deltaTime = currFrame - lastFrame;
 	lastFrame = currFrame;
-	
+	if (isPaused) {
+		pausedTime += deltaTime;
+		deltaTime = 0;
+	}
+
 	// 如果游戏还未开始,画开始按钮,标题
 	if (!isStarted) {
 		pButtonShader->use();
 		pStartButton->draw(*pButtonShader);
-		
+
 		pBoardShader->use();
 		pTitle->draw(*pBoardShader);
-		
+
 		// 如果上一次游戏结束,重新开始
 		if (isOver) {
 			isOver = false;
@@ -178,27 +184,28 @@ void display() {
 		pBoardShader->use();
 		pScore->draw(*pBoardShader);
 
-
 		pBoardShader->use();
 
-		if (isSpaceDown) {	
-			pBird->fly();
+		if (!isPaused) {
+			// 暂停时不改变鸟的绘制状态
+			if (isSpaceDown) {
+				pBird->fly();
+			}
+
+			pBird->fall(deltaTime);
+
+			// 确定翅膀扇动的频率
+			static int flutterRate = 0;
+			++flutterRate;
+			if (flutterRate % 10 == 0)
+				pBird->flutter();
 		}
 
-		pBird->fall(deltaTime);
-		
-		// 确定翅膀扇动的频率
-		static int flutterRate = 0;
-		++flutterRate;
-		if (flutterRate % 10 == 0)
-			pBird->flutter();
-		
 		pBird->draw(*pBoardShader);
-
 
 		pTubeShader->use();
 
-		for (auto &ptube : tubes) {
+		for (auto& ptube : tubes) {
 			ptube->shift(deltaTime);
 			ptube->draw(*pTubeShader);
 		}
@@ -226,9 +233,7 @@ void display() {
 				SoundManager::instance()->play(pointSound);
 			}
 		}
-
 	}
-
 
 	pBoardShader->use();
 	pBackground->draw(*pBoardShader);
@@ -240,7 +245,7 @@ void display() {
 // 判断空格是否按下
 void spaceDown(unsigned char key, int, int) {
 	if (key == ' ') {
-		if (isStarted && !isOver) {
+		if (isStarted && !isOver && !isPaused) {
 			SoundManager::instance()->play(wingSound);		
 		}
 		isSpaceDown = true;
@@ -253,6 +258,21 @@ void spaceDown(unsigned char key, int, int) {
 				", " << ptube->position().y << ")\n";
 			}
  		int a = 1;
+	}
+
+	// 暂停
+	if (key == 'p') {
+		if (isStarted && !isOver) {
+			//isPaused = isPaused ? false : true;
+			if (!isPaused) {
+				isPaused = true;
+				pScore->setPause();
+			}
+			else {
+				isPaused = false;
+				pScore->setRun();
+			}
+		}
 	}
 }
 
