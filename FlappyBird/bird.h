@@ -15,6 +15,21 @@
 #include "config.h"
 #include "displayBoard.h"
 
+std::vector<const char*> origin_tex = {
+						 "texture//birdNormal.png", "texture//birdFlutterDownNormal.png", "texture//birdFlutterUpNormal.png",
+						 "texture//birdNormalFly.png", "texture//birdFlutterDownFly.png", "texture//birdFlutterUpFly.png",
+						 "texture//birdNormalFall.png", "texture//birdFlutterDownFall.png", "texture//birdFlutterUpFall.png"
+};
+
+std::vector<const char*> blue_tex = {
+						 "texture//birdNormal.png", "texture//birdFlutterDownNormal.png", "texture//birdFlutterUpNormal.png",
+						 "texture//birdNormalFly.png", "texture//birdFlutterDownFly.png", "texture//birdFlutterUpFly.png",
+						 "texture//birdNormalFall.png", "texture//birdFlutterDownFall.png", "texture//birdFlutterUpFall.png"
+};
+
+glm::vec3 normal_scale = { 0.6f, 0.6f, 1.0f };
+glm::vec3 hard_scale = { 1.0f, 1.0f, 1.0f };
+
 /*
 \  用于定义鸟的类型
 */
@@ -22,15 +37,12 @@ class Bird : public DisplayBoard, public utility::Collidable {
 public:
 	using BoxT = utility::Collidable::BoxType;
 
-	Bird(const glm::vec3 &pos, const GLfloat speed = -1000.0f)
-		: DisplayBoard({ 
-						 "texture//birdNormal.png", "texture//birdFlutterDownNormal.png", "texture//birdFlutterUpNormal.png",
-						 "texture//birdNormalFly.png", "texture//birdFlutterDownFly.png", "texture//birdFlutterUpFly.png",
-						 "texture//birdNormalFall.png", "texture//birdFlutterDownFall.png", "texture//birdFlutterUpFall.png"		 
-					   },
-		  pos, {0.6f, 0.6f, 1.0f}),
-		  utility::Collidable(BoxT::RETENCGEL, pos, 2.0f * (BoardSp::HALFEDGE * 0.6f - 5.0f), 2.0f * (BoardSp::HALFEDGE * 0.6f - 5.0f)),
-		  speed_(speed)
+	Bird(const glm::vec3& pos, GLint mode = 0, GLint skin = 0, const GLfloat speed = -1000.0f)
+		: DisplayBoard(skin == 0 ? origin_tex : blue_tex,
+			pos,
+			(mode == 0 || mode == 1) ? normal_scale : hard_scale),
+		utility::Collidable(BoxT::RETENCGEL, pos, 2.0f * (BoardSp::HALFEDGE * 0.6f - 5.0f), 2.0f * (BoardSp::HALFEDGE * 0.6f - 5.0f)),
+		speed_(speed)
 	{}
 
 	void fly() {
@@ -51,6 +63,10 @@ public:
 			if (this->getIndex() < Fall)
 				this->setTexture(Fall);
 		}
+	}
+
+	bool out() {
+		return this->Board::position_.y <= -500;
 	}
 
 	// 用于实现鸟煽动翅膀的动画

@@ -75,7 +75,9 @@ public:
 		glReadPixels(mouseX, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
 		gluUnProject(winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
-		// cout << "mouse position: " << "posX: " << posX << " posY: " << posY << endl;
+		//cout << "position: " << "posX: " << this->position_.x << " posY: " << this->position_.y << endl;
+
+		cout << "mouse position: " << "posX: " << posX << " posY: " << posY << endl;
 		
 
 		glm::mat4 model;
@@ -85,8 +87,21 @@ public:
 		glm::vec4 pos{ posX, posY, posZ, 1.0f };
 		pos = glm::inverse(PROJECTION) * glm::inverse(model) * pos;
 
-		return pos.x > -BoardSp::HALFEDGE && pos.x < BoardSp::HALFEDGE
-			&& pos.y > -BoardSp::HALFEDGE && pos.y < BoardSp::HALFEDGE;
+		//cout << "inversed position: " << "posX: " << pos.x << " posY: " << pos.y << endl;
+
+		GLfloat normalized_x = this->position_.x / 500;
+		GLfloat normalized_y = this->position_.y / 500;
+		GLfloat normalized_edge_x = BoardSp::HALFEDGE * this->scale_.x / 500;
+		GLfloat normalized_edge_y = BoardSp::HALFEDGE * this->scale_.y / 500;
+
+		cout << "position: " << "posX: " << normalized_x << " posY: " << normalized_y << endl;
+		cout << "scale: " << "scaleX: " << normalized_edge_x << " scaleY: " << normalized_edge_y << endl;
+
+		return posX > normalized_x - normalized_edge_x && posX < normalized_x + normalized_edge_x
+			&& posY > normalized_y - normalized_edge_y && posY < normalized_y + normalized_edge_y;
+
+		//return pos.x > -BoardSp::HALFEDGE && pos.x < BoardSp::HALFEDGE
+		//	&& pos.y > -BoardSp::HALFEDGE && pos.y < BoardSp::HALFEDGE;
 	}
 	
 

@@ -32,9 +32,27 @@ void mouseClick(int button, int state, int x, int y);
 bool isStarted = false;
 bool isOver = false;
 bool isPaused = false;
-bool startButtonDown = false;
-bool OKButtonDown = false;
+bool isSelectingMode = false;
+bool isSelectingSkin = false;
 bool isSpaceDown = false;
+
+bool startButtonDown = false;
+bool modeButtonDown = false;
+bool skinButtonDown = false;
+bool backButtonDown = false;
+bool easyButtonDown = false;
+bool normalButtonDown = false;
+bool hardButtonDown = false;
+bool originButtonDown = false;
+bool blueButtonDown = false;
+bool OKButtonDown = false;
+
+enum modeSet {Easy = 0, Normal = 1, Hard = 2};
+enum skinSet {Origin = 0, Blue = 1};
+
+GLint mode = Normal;
+GLint skin = Origin;
+
 GLfloat deltaTime = 0.0;
 GLfloat lastFrame = 0.0;
 GLfloat pausedTime = 0.0;
@@ -43,6 +61,14 @@ constexpr std::size_t tubeNum = 999;
 
 unique_ptr<Button> pStartButton;
 unique_ptr<Button> pOKButton;
+unique_ptr<Button> pBackButton;
+unique_ptr<Button> pModeButton;
+unique_ptr<Button> pEasyButton;
+unique_ptr<Button> pNormalButton;
+unique_ptr<Button> pHardButton;
+unique_ptr<Button> pSkinButton;
+unique_ptr<Button> pOriginButton;
+unique_ptr<Button> pBlueButton;
 unique_ptr<Board> pBackground;
 unique_ptr<Board> pTitle;
 unique_ptr<Board> pGameOver;
@@ -85,7 +111,6 @@ int main(int argc, char **argv) {
 	glutKeyboardUpFunc(spaceUp);
 	glutMouseFunc(mouseClick);
 
-
 	glutMainLoop();
 }
 
@@ -97,6 +122,14 @@ void init() {
 	utility::CollisionWorld::setUp();
 
 	pStartButton = std::make_unique<Button>("texture//startButton.png");
+	pModeButton = std::make_unique<Button>("texture//modeButton.png", glm::vec3{ -150.0f, -170.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
+	pBackButton = std::make_unique<Button>("texture//backButton.png", glm::vec3{ 0.0f, -360.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
+	pEasyButton = std::make_unique<Button>("texture//easyButton.png", glm::vec3{ 0.0f, -120.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
+	pNormalButton = std::make_unique<Button>("texture//normalButton.png", glm::vec3{ 0.0f, -200.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
+	pHardButton = std::make_unique<Button>("texture//hardButton.png", glm::vec3{ 0.0f, -280.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
+	pSkinButton = std::make_unique<Button>("texture//skinButton.png", glm::vec3{ 150.0f, -170.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
+	pOriginButton = std::make_unique<Button>("texture//originButton.png", glm::vec3{ 0.0f, -120.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
+	pBlueButton = std::make_unique<Button>("texture//blueButton.png", glm::vec3{ 0.0f, -240.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
 	pOKButton = std::make_unique<Button>("texture//OKButton.png", glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ 1.41f, 0.5f, 1.0f });
 	pButtonShader = std::make_unique<Shader>("board.vert", "board.frag");
 
@@ -105,20 +138,10 @@ void init() {
 
 	pBackground = std::make_unique<Board>("texture//background.png", glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{10.0f, 10.0f, 1.0f});
 	
-	
 	pBoardShader = std::make_unique<Shader>("board.vert", "board.frag");
 
 	pScore = std::make_unique<ScoreBoard>(glm::vec3{ 0.0f, 400.0f, 0.0f }, glm::vec3{ 0.26f, 0.36f, 1.0f }, 0);
 
-	pBird = std::make_unique<Bird>(glm::vec3{ 0.0f, -109.693f, 0.0f });
-
-	std::default_random_engine e;
-
-	for (int i = 0; i < tubeNum; ++i) {
-		tubes.emplace_back(std::make_unique<Tube>(
-			glm::vec3(500.0f + 400.0f * static_cast<float>(i), (static_cast<int>(e() % 6) - 3) * 80.0f, 0.0f/*30.0f, -160.0f, 0.0f*/)
-			));
-	}
 	pTubeShader = std::make_unique<Shader>("tube.vert", "tube.frag");
 
 	auto pSoundManager = SoundManager::instance();
@@ -132,13 +155,14 @@ void init() {
 
 // 重置游戏
 void reInit() {
-	pBird = std::make_unique<Bird>(glm::vec3{ 0.0f, -109.693f, 0.0f });
+	pBird = std::make_unique<Bird>(glm::vec3{ 0.0f, -109.693f, 0.0f }, mode, skin);
 	std::default_random_engine e;
 	tubes.clear();
+	GLfloat halfSpace = (mode == 1 || mode == 2) ? 130.0f : 180.0f;
 	for (int i = 0; i < tubeNum; ++i) {
 		tubes.emplace_back(std::make_unique<Tube>(
 			glm::vec3(500.0f + 400.0f * static_cast<float>(i), (static_cast<int>(e() % 6) - 3) * 80.0f, 0.0f)
-			));
+			, halfSpace, 0.0f));
 	}
 	currTube = 0;
 	pScore->setValue(0);
@@ -150,18 +174,33 @@ void display() {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GLfloat currFrame = 0.0001f * glutGet(GLUT_ELAPSED_TIME) - pausedTime;
+	GLfloat currFrame = 0.0001f * glutGet(GLUT_ELAPSED_TIME);
 	deltaTime = currFrame - lastFrame;
 	lastFrame = currFrame;
 	if (isPaused) {
-		pausedTime += deltaTime;
+		//pausedTime += deltaTime;
 		deltaTime = 0;
 	}
 
 	// 如果游戏还未开始,画开始按钮,标题
 	if (!isStarted) {
 		pButtonShader->use();
-		pStartButton->draw(*pButtonShader);
+		if (isSelectingMode) {
+			pBackButton->draw(*pButtonShader);
+			pEasyButton->draw(*pButtonShader);
+			pNormalButton->draw(*pButtonShader);
+			pHardButton->draw(*pButtonShader);
+		}
+		else if (isSelectingSkin) {
+			pBackButton->draw(*pButtonShader);
+			pOriginButton->draw(*pButtonShader);
+			pBlueButton->draw(*pButtonShader);
+		}
+		else {
+			pStartButton->draw(*pButtonShader);
+			pModeButton->draw(*pButtonShader);
+			pSkinButton->draw(*pButtonShader);
+		}
 
 		pBoardShader->use();
 		pTitle->draw(*pBoardShader);
@@ -221,6 +260,12 @@ void display() {
 				: pBird->collisionDetect(tubes[currTube]->getDownBox()) || pBird->collisionDetect(tubes[currTube]->getUpBox())) {
 				// cout << "\nCollide\n";
 				// system("Pause");
+				SoundManager::instance()->play(hitSound);
+				SoundManager::instance()->play(dieSound);
+				isOver = true;
+			}
+
+			if (pBird->out()) {
 				SoundManager::instance()->play(hitSound);
 				SoundManager::instance()->play(dieSound);
 				isOver = true;
@@ -288,13 +333,64 @@ void mouseClick(int button, int state, int x, int y) {
 	if (button == GLUT_LEFT_BUTTON) {
 		if (state == GLUT_DOWN) {
 			cout << x << " " << y << endl;
-			if (!isStarted && pStartButton->cover(x, y)) { 
-				pStartButton->down(); startButtonDown = true; 
+			if (!isStarted && pStartButton->cover(x, y)) {
+				pStartButton->down();
+				startButtonDown = true;
 				SoundManager::instance()->play(clickSound);
 			}
-			if (isOver && pOKButton->cover(x, y)) { 
-				pOKButton->down(); 
-				OKButtonDown = true; 
+			if (isOver && pOKButton->cover(x, y)) {
+				pOKButton->down();
+				OKButtonDown = true;
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && pModeButton->cover(x, y)) {
+				pModeButton->down();
+				modeButtonDown = true;
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && pSkinButton->cover(x, y)) {
+				pSkinButton->down();
+				skinButtonDown = true;
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && (isSelectingMode || isSelectingSkin) && pBackButton->cover(x, y)) {
+				pBackButton->down();
+				backButtonDown = true;
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && isSelectingMode && pEasyButton->cover(x, y)) {
+				pEasyButton->down();
+				easyButtonDown = true;
+				mode = Easy;
+				reInit();
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && isSelectingMode && pNormalButton->cover(x, y)) {
+				pNormalButton->down();
+				normalButtonDown = true;
+				mode = Normal;
+				reInit();
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && isSelectingMode && pHardButton->cover(x, y)) {
+				pHardButton->down();
+				hardButtonDown = true;
+				mode = Hard;
+				reInit();
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && isSelectingSkin && pOriginButton->cover(x, y)) {
+				pOriginButton->down();
+				originButtonDown = true;
+				skin = Origin;
+				reInit();
+				SoundManager::instance()->play(clickSound);
+			}
+			if (!isStarted && isSelectingSkin && pBlueButton->cover(x, y)) {
+				pBlueButton->down();
+				blueButtonDown = true;
+				skin = Blue;
+				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 		}
@@ -308,6 +404,48 @@ void mouseClick(int button, int state, int x, int y) {
 				pOKButton->up();
 				OKButtonDown = false;
 				isStarted = false;			
+			}
+			if (!isStarted && modeButtonDown) {
+				pModeButton->up();
+				modeButtonDown = false;
+				isSelectingMode = true;
+			}
+			if (!isStarted && skinButtonDown) {
+				pSkinButton->up();
+				skinButtonDown = false;
+				isSelectingSkin = true;
+			}
+			if (!isStarted && (isSelectingMode || isSelectingSkin) && backButtonDown) {
+				pBackButton->up();
+				backButtonDown = false;
+				isSelectingMode = false;
+				isSelectingSkin = false;
+				isStarted = false;
+			}
+			if (!isStarted && isSelectingMode && easyButtonDown) {
+				pEasyButton->up();
+				easyButtonDown = false;
+				mode = Easy;
+			}
+			if (!isStarted && isSelectingMode && normalButtonDown) {
+				pNormalButton->up();
+				normalButtonDown = false;
+				mode = Normal;
+			}			
+			if (!isStarted && isSelectingMode && hardButtonDown) {
+				pHardButton->up();
+				hardButtonDown = false;
+				mode = Hard;
+			}
+			if (!isStarted && isSelectingSkin && originButtonDown) {
+				pOriginButton->up();
+				originButtonDown = false;
+				skin = Origin;
+			}
+			if (!isStarted && isSelectingSkin && blueButtonDown) {
+				pBlueButton->up();
+				blueButtonDown = false;
+				skin = Blue;
 			}
 		}
 	}
