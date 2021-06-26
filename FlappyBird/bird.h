@@ -22,9 +22,9 @@ std::vector<const char*> origin_tex = {
 };
 
 std::vector<const char*> blue_tex = {
-						 "texture//birdNormal.png", "texture//birdFlutterDownNormal.png", "texture//birdFlutterUpNormal.png",
-						 "texture//birdNormalFly.png", "texture//birdFlutterDownFly.png", "texture//birdFlutterUpFly.png",
-						 "texture//birdNormalFall.png", "texture//birdFlutterDownFall.png", "texture//birdFlutterUpFall.png"
+						 "texture//blueNormal.png", "texture//blueFlutterDownNormal.png", "texture//blueFlutterUpNormal.png",
+						 "texture//blueNormalFly.png", "texture//blueFlutterDownFly.png", "texture//blueFlutterUpFly.png",
+						 "texture//blueNormalFall.png", "texture//blueFlutterDownFall.png", "texture//blueFlutterUpFall.png"
 };
 
 glm::vec3 normal_scale = { 0.6f, 0.6f, 1.0f };
