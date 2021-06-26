@@ -10,6 +10,7 @@
 #include "board.h"
 #include "bird.h"
 #include "tube.h"
+#include "particle_generator.h"
 #include "collisionWorld.h"
 #include "SoundManager.h"
 #include "button.h"
@@ -58,6 +59,7 @@ GLfloat lastFrame = 0.0;
 GLfloat pausedTime = 0.0;
 
 constexpr std::size_t tubeNum = 999;
+constexpr std::size_t particleNum = 500;
 
 unique_ptr<Button> pStartButton;
 unique_ptr<Button> pOKButton;
@@ -78,6 +80,9 @@ std::vector<unique_ptr<Tube>> tubes;
 unique_ptr<Shader> pButtonShader;
 unique_ptr<Shader> pTubeShader;
 unique_ptr<Shader> pBoardShader;
+unique_ptr<Shader> pParticleShader;
+
+ParticleGenerator* particles;
 
 int currTube = 0;  // Index
 std::size_t wingSound;
@@ -143,6 +148,9 @@ void init() {
 	pScore = std::make_unique<ScoreBoard>(glm::vec3{ 0.0f, 400.0f, 0.0f }, glm::vec3{ 0.26f, 0.36f, 1.0f }, 0);
 
 	pTubeShader = std::make_unique<Shader>("tube.vert", "tube.frag");
+
+	pParticleShader = std::make_unique<Shader>("particle.vert", "particle.frag");
+	particles = new ParticleGenerator(particleNum);
 
 	auto pSoundManager = SoundManager::instance();
 	wingSound = pSoundManager->load("sounds//wing.wav");
@@ -227,6 +235,7 @@ void display() {
 
 		if (!isPaused) {
 			// 暂停时不改变鸟的绘制状态
+
 			if (isSpaceDown) {
 				pBird->fly();
 			}
@@ -238,9 +247,19 @@ void display() {
 			++flutterRate;
 			if (flutterRate % 10 == 0)
 				pBird->flutter();
+
+			// 绘制粒子效果
+			//pParticleShader->use();
+			//particles->update(deltaTime, pBird->getPosition2f(), glm::vec2{ -2500.0f, pBird->getVelocityY() }, 2, glm::vec2(pBird->getHalfEdge()));
+			//particles->draw(*pParticleShader);
 		}
 
 		pBird->draw(*pBoardShader);
+
+		// 绘制粒子效果
+		pParticleShader->use();
+		particles->update(deltaTime, pBird->getPosition2f(), glm::vec2{ 2500.0f, pBird->getVelocityY() }, 2, glm::vec2(pBird->getHalfEdge()));
+		particles->draw(*pParticleShader);
 
 		pTubeShader->use();
 
@@ -282,6 +301,14 @@ void display() {
 
 	pBoardShader->use();
 	pBackground->draw(*pBoardShader);
+
+	/*
+	if (isStarted && !isOver) {
+		// 绘制粒子效果
+		pParticleShader->use();
+		particles->update(deltaTime, pBird->getPosition2f(), glm::vec2{ -2500.0f, pBird->getVelocityY() }, 2, glm::vec2(pBird->getHalfEdge()));
+		particles->draw(*pParticleShader);
+	}*/
 
  	glFlush();
 }
@@ -336,11 +363,13 @@ void mouseClick(int button, int state, int x, int y) {
 			if (!isStarted && pStartButton->cover(x, y)) {
 				pStartButton->down();
 				startButtonDown = true;
+				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 			if (isOver && pOKButton->cover(x, y)) {
 				pOKButton->down();
 				OKButtonDown = true;
+				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 			if (!isStarted && pModeButton->cover(x, y)) {
@@ -356,41 +385,37 @@ void mouseClick(int button, int state, int x, int y) {
 			if (!isStarted && (isSelectingMode || isSelectingSkin) && pBackButton->cover(x, y)) {
 				pBackButton->down();
 				backButtonDown = true;
+				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 			if (!isStarted && isSelectingMode && pEasyButton->cover(x, y)) {
 				pEasyButton->down();
 				easyButtonDown = true;
 				mode = Easy;
-				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 			if (!isStarted && isSelectingMode && pNormalButton->cover(x, y)) {
 				pNormalButton->down();
 				normalButtonDown = true;
 				mode = Normal;
-				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 			if (!isStarted && isSelectingMode && pHardButton->cover(x, y)) {
 				pHardButton->down();
 				hardButtonDown = true;
 				mode = Hard;
-				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 			if (!isStarted && isSelectingSkin && pOriginButton->cover(x, y)) {
 				pOriginButton->down();
 				originButtonDown = true;
 				skin = Origin;
-				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 			if (!isStarted && isSelectingSkin && pBlueButton->cover(x, y)) {
 				pBlueButton->down();
 				blueButtonDown = true;
 				skin = Blue;
-				reInit();
 				SoundManager::instance()->play(clickSound);
 			}
 		}

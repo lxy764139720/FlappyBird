@@ -165,6 +165,8 @@
     <None Include="board.frag" />
     <None Include="board.vert" />
     <None Include="dependencies\assimp\assimp.dll" />
+    <None Include="particle.frag" />
+    <None Include="particle.vert" />
     <None Include="tube.frag" />
     <None Include="tube.vert" />
   </ItemGroup>
@@ -185,6 +187,7 @@
     <ClInclude Include="drawAble.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="include\SOIL.h" />
+    <ClInclude Include="particle_generator.h" />
     <ClInclude Include="physic.h" />
     <ClInclude Include="scoreBoard.h" />
     <ClInclude Include="shader.h" />

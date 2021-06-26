@@ -69,6 +69,18 @@ public:
 		return this->Board::position_.y <= -500;
 	}
 
+	glm::vec2 getPosition2f() {
+		return glm::vec2{ this->Board::position_.x, this->Board::position_.y };
+	}
+
+	GLfloat getVelocityY() {
+		return this->speed_;
+	}
+
+	GLfloat getHalfEdge() {
+		return BoardSp::HALFEDGE * 0.6; //this->Board::scale_.x
+	}
+
 	// 用于实现鸟煽动翅膀的动画
 	void flutter() {
 		switch (this->getIndex())

@@ -86,6 +86,12 @@
     <None Include="board.frag">
       <Filter>shader</Filter>
     </None>
+    <None Include="particle.frag">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="particle.vert">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Library Include="dependencies\assimp\assimp.lib">
@@ -145,6 +151,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="SoundManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="particle_generator.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
